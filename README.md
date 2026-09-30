@@ -32,7 +32,7 @@ Un solo archivo cambia todo: **`src/config.ts`**.
 
 | Campo | Para qué |
 | --- | --- |
-| `whatsappNumber` | El número que recibe los pedidos, en formato E.164 sin `+` ni espacios (ej. `5491123456789`). |
+| `whatsappNumber` | El número que recibe los pedidos, en formato E.164 sin `+` ni espacios (hoy `5492657209503`). |
 | `currency` / `locale` | Moneda y formato de los precios (`es-AR` → `$ 28.900`). |
 | `shippingFlat` / `freeShippingFrom` | Costo de envío y umbral a partir del cual sale sin cargo. |
 | `email`, `instagram`, `location`, `hours` | Pie de página y sección de contacto. |
@@ -47,9 +47,19 @@ Un solo archivo cambia todo: **`src/config.ts`**.
    `localStorage` (clave `aurema-cart`), así que aguanta un F5.
 2. En el drawer completa nombre, dirección y ciudad (`CheckoutForm.tsx`).
 3. `src/lib/whatsapp.ts` arma el mensaje con las líneas, el subtotal, el envío y el total,
-   y lo codifica en un enlace `api.whatsapp.com/send?text=...`.
-4. Se abre WhatsApp con el texto escrito. No se envía nada hasta que el cliente apriete
-   enviar: ahí se confirman precio final y medio de pago.
+   y lo codifica en un enlace `api.whatsapp.com/send?phone=...&text=...`. El número sale de
+   `STORE.whatsappNumber` y pasa por `normalizePhone`, que también usan los enlaces sueltos
+   de contacto (`buildContactUrl` en footer y CTA).
+4. Se abre WhatsApp con el texto escrito: en el celular en la misma pestaña, porque el deep
+   link directo a la app rinde mejor que una pestaña que cae en el login web. En escritorio
+   se abre otra pestaña clickeando un `<a>` en vez de `window.open`: si se le pasa
+   `noopener`, la spec dice que devuelve `null` incluso cuando la ventana abrió, y ese `null`
+   no se puede leer como "el navegador la bloqueó".
+5. El panel de confirmación no promete haber abierto nada —un deep link no devuelve esa
+   señal— y por eso muestra un enlace real de respaldo. El carrito queda a la vista hasta que
+   el cliente dice "ya lo mandé".
+6. No se envía nada hasta que el cliente apriete enviar en el chat: ahí se confirman precio
+   final y medio de pago.
 
 Los totales se calculan en un solo lugar (`computeTotals`) para que el resumen visible y
 el mensaje de WhatsApp no puedan divergir.

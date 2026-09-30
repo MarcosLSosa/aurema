@@ -12,10 +12,9 @@ export const STORE = {
 
   /**
    * Número de la tienda en formato internacional, SOLO dígitos, sin "+",
-   * sin espacios ni guiones. Ej: 54 9 11 1234-5678 -> "5491112345678".
-   * ⚠️ REEMPLAZAR por el número real antes de publicar.
+   * sin espacios ni guiones. Whatsapp lo toma tal cual para armar el chat.
    */
-  whatsappNumber: "5491123456789",
+  whatsappNumber: "5492657209503",
 
   /** Moneda y locale usados por formatPrice(). */
   currency: "ARS",

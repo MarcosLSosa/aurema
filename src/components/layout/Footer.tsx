@@ -1,5 +1,6 @@
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
+import { buildContactUrl } from "@/lib/whatsapp"
 
 export function Footer() {
   return (
@@ -18,7 +19,7 @@ export function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
               <a
-                href={`https://api.whatsapp.com/send?phone=${STORE.whatsappNumber}`}
+                href={buildContactUrl()}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 text-ink transition-colors hover:text-clay"

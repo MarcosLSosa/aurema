@@ -37,6 +37,15 @@ export function normalizePhone(raw: string): string {
 }
 
 /**
+ * Enlace de contacto simple (sin mensaje), para los CTA tipo "escribinos".
+ * Pasa el número por normalizePhone a propósito: si alguien lo carga con "+"
+ * o espacios en config.ts, estos enlaces tampoco se rompen.
+ */
+export function buildContactUrl(phone: string = STORE.whatsappNumber): string {
+  return `https://api.whatsapp.com/send?phone=${normalizePhone(phone)}`
+}
+
+/**
  * Arma el cuerpo del mensaje con el resumen del pedido.
  * Usa * para que WhatsApp renderice las partes en negrita.
  */

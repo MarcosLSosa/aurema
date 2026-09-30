@@ -4,7 +4,8 @@ import type { FormEvent } from "react"
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
 import { formatPrice } from "@/lib/format"
-import { buildOrderMessage, buildWhatsAppUrl, computeTotals } from "@/lib/whatsapp"
+import { buildCheckoutUrl, buildOrderMessage, computeTotals } from "@/lib/whatsapp"
+import type { Totals } from "@/lib/whatsapp"
 import type { CartLine, Customer } from "@/types"
 
 const EMPTY: Customer = { name: "", address: "", city: "", notes: "" }
@@ -22,13 +23,19 @@ const FIELD =
 interface CheckoutFormProps {
   lines: CartLine[]
   onBack: () => void
+  /** Vaciar el carrito; se ofrece cuando el pedido ya salió. */
+  onClearCart: () => void
+  /** Cerrar el drawer sin tocar el carrito. */
+  onKeepShopping: () => void
 }
 
-export function CheckoutForm({ lines, onBack }: CheckoutFormProps) {
+export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: CheckoutFormProps) {
   const [form, setForm] = useState<Customer>(EMPTY)
   const [showErrors, setShowErrors] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
+  /** La URL ya armada, apenas se disparó la apertura del chat. */
+  const [sentUrl, setSentUrl] = useState<string | null>(null)
 
   const totals = computeTotals(lines)
   const missing = REQUIRED.filter((f) => form[f.key].trim() === "")
@@ -44,18 +51,31 @@ export function CheckoutForm({ lines, onBack }: CheckoutFormProps) {
     setShowErrors(true)
     if (missing.length > 0) return
 
+    let url: string
     try {
-      const url = buildWhatsAppUrl(buildOrderMessage(lines, form))
-      // noopener evita que la página de destino pueda tocar window.opener.
-      const opened = window.open(url, "_blank", "noopener,noreferrer")
-      if (!opened) {
-        setConfigError(
-          "El navegador bloqueó la ventana emergente. Permitila y volvé a intentar.",
-        )
-      }
+      url = buildCheckoutUrl(lines, form)
     } catch (error) {
       setConfigError(error instanceof Error ? error.message : "No pudimos armar el enlace.")
+      return
     }
+
+    setConfigError(null)
+    setSentUrl(url)
+    openChat(url)
+  }
+
+  // Todos los hooks están declarados arriba, así que este corte temprano
+  // no rompe el orden de render.
+  if (sentUrl) {
+    return (
+      <SentPanel
+        url={sentUrl}
+        totals={totals}
+        onFix={() => setSentUrl(null)}
+        onClearCart={onClearCart}
+        onKeepShopping={onKeepShopping}
+      />
+    )
   }
 
   return (
@@ -177,5 +197,118 @@ export function CheckoutForm({ lines, onBack }: CheckoutFormProps) {
         </button>
       </div>
     </form>
+  )
+}
+
+/**
+ * Abre el chat con el pedido ya escrito.
+ *
+ * Acá NO se usa window.open: cuando se pasa "noopener" en el features string,
+ * la spec dice que la función devuelve null aunque la ventana sí haya abierto.
+ * El código anterior leía ese null como "el navegador la bloqueó" y mostraba un
+ * error falso encima de un pedido que había salido perfecto. Un <a> fabricado y
+ * clickeado hereda el gesto del usuario —no lo frenan los bloqueadores— y no
+ * necesita comprobar el resultado porque el respaldo lo da SentPanel.
+ *
+ * En el celular navegamos en la misma pestaña: con target="_blank" varios
+ * terminan en web.whatsapp.com pidiendo login, y el deep link directo a la app
+ * anda mejor. El carrito vive en localStorage, volver no lo borra.
+ */
+function openChat(url: string) {
+  if (window.matchMedia("(max-width: 767px)").matches) {
+    window.location.assign(url)
+    return
+  }
+
+  const link = document.createElement("a")
+  link.href = url
+  link.target = "_blank"
+  link.rel = "noopener noreferrer"
+  document.body.append(link)
+  link.click()
+  link.remove()
+}
+
+interface SentPanelProps {
+  url: string
+  totals: Totals
+  onFix: () => void
+  onClearCart: () => void
+  onKeepShopping: () => void
+}
+
+/**
+ * Confirmación del envío.
+ *
+ * Un deep link no devuelve señal de "esto efectivamente abrió", así que no
+ * prometemos haber abierto WhatsApp: mostramos un enlace real de respaldo. Si
+ * la ventana no apareció, el cliente lo toca y el circuito cierra igual.
+ */
+function SentPanel({ url, totals, onFix, onClearCart, onKeepShopping }: SentPanelProps) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="thin-scroll flex-1 overflow-y-auto px-6 py-8">
+        <span className="grid size-16 place-items-center rounded-full bg-olive/15">
+          <Icon name="check" className="size-7 text-olive" strokeWidth={2} />
+        </span>
+
+        <h2 className="mt-5 font-display text-2xl text-bark">Ya está armado el pedido</h2>
+        <p className="mt-2 text-sm leading-relaxed text-stone">
+          Abrimos WhatsApp con el pedido escrito: sólo tenés que apretar enviar. Si no
+          apareció ninguna ventana, tocá este botón.
+        </p>
+
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-full bg-clay py-4 text-sm font-medium text-bone transition-colors hover:bg-clay-deep"
+        >
+          <Icon name="whatsapp" className="size-[18px]" />
+          Abrir WhatsApp
+        </a>
+
+        <button
+          type="button"
+          onClick={onFix}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-stone transition-colors hover:text-bark"
+        >
+          <Icon name="arrowRight" className="size-4 rotate-180" />
+          Corregir algún dato
+        </button>
+      </div>
+
+      <div className="border-t border-line bg-shell/60 px-6 py-5">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm text-stone">
+            {totals.itemCount} {totals.itemCount === 1 ? "unidad" : "unidades"}
+          </span>
+          <span className="font-display text-2xl text-bark tabular-nums">
+            {formatPrice(totals.total)}
+          </span>
+        </div>
+        <p className="mt-1 text-xs leading-relaxed text-stone">
+          El carrito queda guardado por si querés revisar el pedido antes de enviarlo.
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={onKeepShopping}
+            className="rounded-full border border-line px-4 py-3 text-sm text-bark transition-colors hover:border-bark"
+          >
+            Seguir comprando
+          </button>
+          <button
+            type="button"
+            onClick={onClearCart}
+            className="flex items-center justify-center gap-2 rounded-full bg-bark px-4 py-3 text-sm text-bone transition-colors hover:bg-clay"
+          >
+            <Icon name="trash" className="size-4" />
+            Ya lo mandé
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

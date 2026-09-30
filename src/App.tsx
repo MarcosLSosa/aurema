@@ -8,8 +8,8 @@ import { Header } from "@/components/layout/Header"
 import { FilterBar } from "@/components/products/FilterBar"
 import { ProductGrid } from "@/components/products/ProductGrid"
 import { Icon } from "@/components/ui/Icon"
-import { STORE } from "@/config"
 import { CATEGORIES, PRODUCTS } from "@/data/products"
+import { buildContactUrl } from "@/lib/whatsapp"
 import type { CategoryFilter } from "@/types"
 
 /** Contadores por chip de filtro: son estáticos, se calculan una sola vez. */
@@ -96,7 +96,7 @@ export default function App() {
                   y te pasamos valores y tiempos reales.
                 </p>
                 <a
-                  href={`https://api.whatsapp.com/send?phone=${STORE.whatsappNumber}`}
+                  href={buildContactUrl()}
                   target="_blank"
                   rel="noreferrer"
                   className="group mt-6 inline-flex items-center gap-2.5 rounded-full bg-bark px-6 py-3 text-sm text-bone transition-colors hover:bg-clay"

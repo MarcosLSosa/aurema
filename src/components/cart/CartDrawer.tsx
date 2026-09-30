@@ -89,7 +89,12 @@ export function CartDrawer() {
         {lines.length === 0 ? (
           <EmptyState onBrowse={closeCart} />
         ) : checkout ? (
-          <CheckoutForm lines={lines} onBack={() => setCheckout(false)} />
+          <CheckoutForm
+            lines={lines}
+            onBack={() => setCheckout(false)}
+            onClearCart={clear}
+            onKeepShopping={closeCart}
+          />
         ) : (
           <>
             <ul className="thin-scroll flex-1 divide-y divide-line overflow-y-auto px-6">
