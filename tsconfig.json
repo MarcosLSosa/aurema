@@ -21,7 +21,6 @@
     "forceConsistentCasingInFileNames": true,
 
     "types": ["node", "vite/client"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }

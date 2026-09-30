@@ -1,4 +1,4 @@
-import type { Product } from "../types"
+import type { Category, Product } from "../types"
 
 /** Una categoría puede tener más de una etiqueta (agrupa "todas"). */
 interface CategoryDef {
