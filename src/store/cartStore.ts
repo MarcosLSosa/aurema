@@ -2,12 +2,41 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 import { STORE } from "@/config"
-import type { CartLine, Product } from "@/types"
+import type { CartLine, Customer, Product } from "@/types"
+
+/**
+ * En qué pantalla del checkout está el cliente.
+ *
+ * Es estado PERSISTIDO a propósito: el enlace de WhatsApp se lleva la pestaña
+ * (en el celular navegamos al link) y volver con "atrás" recarga la app desde
+ * cero. Si el paso viviera en un useState, el cliente regresa, se encuentra el
+ * formulario vacío y tiene que escribir todo otra vez.
+ */
+export type CheckoutStep = "cart" | "checkout" | "sent"
+
+/** Último pedido armado. Alcanza con reabrir el chat, no hace falta rellenar nada. */
+export interface SentOrder {
+  chat: string
+  web: string
+  message: string
+  /** Date.now() al armarlo: permite descartar un pedido que ya quedó viejo. */
+  at: number
+}
+
+/** Mientras no lo confirme ni lo borre, un pedido sigue retomable 6 horas. */
+export const SENT_ORDER_TTL_MS = 1000 * 60 * 60 * 6
+
+const EMPTY_CUSTOMER: Customer = { name: "", address: "", city: "", notes: "" }
 
 interface CartState {
   lines: CartLine[]
   /** Estado del drawer. Se mantiene fuera del persist: al recargar, cerrado. */
   isOpen: boolean
+
+  step: CheckoutStep
+  /** Borrador de los datos de envío; se persiste para no escribirlos dos veces. */
+  customer: Customer
+  sent: SentOrder | null
 
   add: (product: Product, qty?: number) => void
   setQty: (productId: string, qty: number) => void
@@ -18,6 +47,11 @@ interface CartState {
 
   openCart: () => void
   closeCart: () => void
+
+  setStep: (step: CheckoutStep) => void
+  setCustomerField: (key: keyof Customer, value: string) => void
+  /** Guarda el pedido recién armado y salta al panel de confirmación. */
+  markSent: (order: Omit<SentOrder, "at">) => void
 }
 
 const clampQty = (qty: number) => Math.max(1, Math.min(STORE.maxQtyPerItem, Math.trunc(qty)))
@@ -40,6 +74,9 @@ export const useCart = create<CartState>()(
     (set) => ({
       lines: [],
       isOpen: false,
+      step: "cart",
+      customer: EMPTY_CUSTOMER,
+      sent: null,
 
       add: (product, qty = 1) =>
         set((state) => {
@@ -53,7 +90,8 @@ export const useCart = create<CartState>()(
 
           // No abrimos el drawer acá: la ficha muestra el "Agregado ✓" y el badge del
           // header anima. Abrirlo solo interrumpiría el recorrido de la grilla.
-          return { lines }
+          // Agregar algo es empezar un pedido nuevo: el anterior deja de tener sentido.
+          return { lines, step: "cart" as const, sent: null }
         }),
 
       setQty: (productId, qty) =>
@@ -88,16 +126,33 @@ export const useCart = create<CartState>()(
       remove: (productId) =>
         set((state) => ({ lines: state.lines.filter((l) => l.productId !== productId) })),
 
-      clear: () => set({ lines: [], isOpen: false }),
+      clear: () => set({ lines: [], isOpen: false, sent: null, step: "cart" }),
 
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
+
+      setStep: (step) => set({ step }),
+
+      setCustomerField: (key, value) =>
+        set((state) => ({ customer: { ...state.customer, [key]: value } })),
+
+      markSent: (order) => set({ sent: { ...order, at: Date.now() }, step: "sent" }),
     }),
     {
       name: "aurema-cart",
+      // Sigue en 1 a propósito: sólo sumamos claves, así el merge superficial de
+      // zustand deja las nuevas con su valor inicial y el carrito de quien ya
+      // tenía una sesión abierta no se pierde al actualizar el sitio.
       version: 1,
-      // Solo persistimos las líneas: isOpen y lastAddedId son estado de UI efímero.
-      partialize: (state) => ({ lines: state.lines }),
+      // Viajan a localStorage las líneas, el paso del checkout, el borrador de
+      // datos y el último pedido armado. Lo único efímero es si el drawer estaba
+      // abierto: nadie quiere que un panel le tape la home al volver a entrar.
+      partialize: (state) => ({
+        lines: state.lines,
+        step: state.step,
+        customer: state.customer,
+        sent: state.sent,
+      }),
     },
   ),
 )

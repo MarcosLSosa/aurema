@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
 import { formatPrice } from "@/lib/format"
 import { computeTotals } from "@/lib/whatsapp"
-import { useCart } from "@/store/cartStore"
+import { SENT_ORDER_TTL_MS, useCart } from "@/store/cartStore"
 
 import { CartLineRow } from "./CartLineRow"
 import { CheckoutForm } from "./CheckoutForm"
@@ -12,19 +12,27 @@ import { CheckoutForm } from "./CheckoutForm"
 export function CartDrawer() {
   const lines = useCart((s) => s.lines)
   const isOpen = useCart((s) => s.isOpen)
+  const openCart = useCart((s) => s.openCart)
   const closeCart = useCart((s) => s.closeCart)
   const clear = useCart((s) => s.clear)
+  const step = useCart((s) => s.step)
+  const setStep = useCart((s) => s.setStep)
 
-  const [checkout, setCheckout] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
   const totals = computeTotals(lines)
   const remaining = STORE.freeShippingFrom - totals.subtotal
 
-  // Al cerrar, la próxima vez que se abre hay que ver el carrito, no el formulario.
+  // Retomar el pedido que se perdió en el viaje: el enlace de WhatsApp navega y
+  // al volver con "atrás" la app recarga con el drawer cerrado. Si queda un
+  // pedido sin confirmar y el carrito sigue cargado, se reabre en el paso en el
+  // que estaba (step y datos también viven en localStorage), sin escribir de nuevo.
   useEffect(() => {
-    if (!isOpen) setCheckout(false)
-  }, [isOpen])
+    const resumed = useCart.getState()
+    if (resumed.lines.length === 0 || !resumed.sent) return
+    if (Date.now() - resumed.sent.at > SENT_ORDER_TTL_MS) return
+    openCart()
+  }, [openCart])
 
   useEffect(() => {
     if (!isOpen) return
@@ -59,7 +67,7 @@ export function CartDrawer() {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={checkout ? "Datos para el pedido" : "Carrito de compras"}
+        aria-label={step === "cart" ? "Carrito de compras" : "Datos para el pedido"}
         tabIndex={-1}
         className="animate-drawer-in absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-bone shadow-[-24px_0_60px_-30px_rgb(31_27_22/0.5)] outline-none"
       >
@@ -67,9 +75,13 @@ export function CartDrawer() {
         <header className="flex items-center justify-between border-b border-line px-6 py-5">
           <div>
             <h2 className="font-display text-xl text-bark">
-              {checkout ? "Finalizar pedido" : "Tu carrito"}
+              {step === "sent"
+                ? "Pedido listo"
+                : step === "checkout"
+                  ? "Finalizar pedido"
+                  : "Tu carrito"}
             </h2>
-            {!checkout && (
+            {step === "cart" && (
               <p className="mt-0.5 text-xs text-stone tabular-nums">
                 {totals.itemCount} {totals.itemCount === 1 ? "unidad" : "unidades"}
               </p>
@@ -88,13 +100,8 @@ export function CartDrawer() {
 
         {lines.length === 0 ? (
           <EmptyState onBrowse={closeCart} />
-        ) : checkout ? (
-          <CheckoutForm
-            lines={lines}
-            onBack={() => setCheckout(false)}
-            onClearCart={clear}
-            onKeepShopping={closeCart}
-          />
+        ) : step !== "cart" ? (
+          <CheckoutForm lines={lines} />
         ) : (
           <>
             <ul className="thin-scroll flex-1 divide-y divide-line overflow-y-auto px-6">
@@ -137,7 +144,7 @@ export function CartDrawer() {
 
               <button
                 type="button"
-                onClick={() => setCheckout(true)}
+                onClick={() => setStep("checkout")}
                 className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-full bg-clay py-4 text-sm font-medium text-bone transition-colors hover:bg-clay-deep"
               >
                 <Icon name="whatsapp" className="size-[18px]" />

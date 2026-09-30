@@ -44,22 +44,31 @@ Un solo archivo cambia todo: **`src/config.ts`**.
 ## Cómo cierra una venta
 
 1. El cliente agrega productos; el estado vive en `src/store/cartStore.ts` y persiste en
-   `localStorage` (clave `aurema-cart`), así que aguanta un F5.
-2. En el drawer completa nombre, dirección y ciudad (`CheckoutForm.tsx`).
-3. `src/lib/whatsapp.ts` arma el mensaje con las líneas, el subtotal, el envío y el total,
-   y lo codifica en un enlace `api.whatsapp.com/send?phone=...&text=...`. El número sale de
-   `STORE.whatsappNumber` y pasa por `normalizePhone`, que también usan los enlaces sueltos
-   de contacto (`buildContactUrl` en footer y CTA).
-4. Se abre WhatsApp con el texto escrito: en el celular en la misma pestaña, porque el deep
-   link directo a la app rinde mejor que una pestaña que cae en el login web. En escritorio
-   se abre otra pestaña clickeando un `<a>` en vez de `window.open`: si se le pasa
-   `noopener`, la spec dice que devuelve `null` incluso cuando la ventana abrió, y ese `null`
-   no se puede leer como "el navegador la bloqueó".
+   `localStorage` (clave `aurema-cart`). Persisten las líneas, el paso del checkout, el
+   borrador de los datos y el último pedido armado. No es un detalle fino: el enlace de
+   WhatsApp se lleva la pestaña y, al volver con "atrás", el navegador recarga la SPA. Con
+   cualquiera de esas partes viviendo sólo en memoria, el cliente volvía y tenía que
+   escribir todos sus datos otra vez.
+2. En el drawer completa nombre, dirección y ciudad (`CheckoutForm.tsx`). Los campos leen y
+   escriben el store, no un `useState` del componente.
+3. `src/lib/whatsapp.ts` arma el mensaje con las líneas, el subtotal, el envío y el total y
+   lo codifica en dos enlaces: `api.whatsapp.com/send?phone=...&text=...` y su equivalente
+   en `web.whatsapp.com/send`. El número sale de `STORE.whatsappNumber` y pasa por
+   `normalizePhone`, que también usan los enlaces sueltos de contacto (`buildContactUrl`).
+4. `markSent` anota el pedido en el store y recién después se abre el chat: en el celular
+   navegando en la misma pestaña, porque el deep link directo a la app rinde mejor que una
+   pestaña que cae en el login web; en escritorio clickeando un `<a>` en vez de
+   `window.open`, porque si se le pasa `noopener` la spec dice que devuelve `null` incluso
+   cuando la ventana abrió, y ese `null` no se puede leer como "el navegador la bloqueó".
 5. El panel de confirmación no promete haber abierto nada —un deep link no devuelve esa
-   señal— y por eso muestra un enlace real de respaldo. El carrito queda a la vista hasta que
-   el cliente dice "ya lo mandé".
-6. No se envía nada hasta que el cliente apriete enviar en el chat: ahí se confirman precio
-   final y medio de pago.
+   señal— y ofrece tres salidas: reabrir el chat, entrar al chat web (en una PC sin la app
+   de escritorio, `api.whatsapp.com` responde "Looks like you don't have WhatsApp
+   installed" y no quedaba por dónde seguir) y copiar el mensaje, por si algún dispositivo
+   corta el texto precargado. Si la página se recargó, el drawer se reabre solo en el paso
+   en que estaba, mientras el pedido no haya vencido (`SENT_ORDER_TTL_MS`).
+6. El carrito no se vacía hasta que el cliente aprieta "Ya lo mandé", y tampoco sale nada
+   hacia el negocio hasta que apriete enviar en el chat: ahí se confirman precio final y
+   medio de pago.
 
 Los totales se calculan en un solo lugar (`computeTotals`) para que el resumen visible y
 el mensaje de WhatsApp no puedan divergir.

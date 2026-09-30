@@ -4,11 +4,11 @@ import type { FormEvent } from "react"
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
 import { formatPrice } from "@/lib/format"
-import { buildCheckoutUrl, buildOrderMessage, computeTotals } from "@/lib/whatsapp"
-import type { Totals } from "@/lib/whatsapp"
+import { buildCheckoutLinks, buildOrderMessage, computeTotals } from "@/lib/whatsapp"
+import type { CheckoutLinks, Totals } from "@/lib/whatsapp"
+import { useCart } from "@/store/cartStore"
+import type { SentOrder } from "@/store/cartStore"
 import type { CartLine, Customer } from "@/types"
-
-const EMPTY: Customer = { name: "", address: "", city: "", notes: "" }
 
 /** Campos sin los cuales no tiene sentido armar el pedido. */
 const REQUIRED: { key: keyof Customer; label: string; placeholder: string }[] = [
@@ -22,27 +22,30 @@ const FIELD =
 
 interface CheckoutFormProps {
   lines: CartLine[]
-  onBack: () => void
-  /** Vaciar el carrito; se ofrece cuando el pedido ya salió. */
-  onClearCart: () => void
-  /** Cerrar el drawer sin tocar el carrito. */
-  onKeepShopping: () => void
 }
 
-export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: CheckoutFormProps) {
-  const [form, setForm] = useState<Customer>(EMPTY)
+export function CheckoutForm({ lines }: CheckoutFormProps) {
+  // Los datos del formulario NO viven en un useState: el enlace de WhatsApp se
+  // lleva la pestaña y al volver el navegador recarga la SPA desde cero. Era
+  // justo acá donde el cliente perdía todo y tenía que escribir otra vez.
+  const customer = useCart((s) => s.customer)
+  const setCustomerField = useCart((s) => s.setCustomerField)
+  const step = useCart((s) => s.step)
+  const setStep = useCart((s) => s.setStep)
+  const sent = useCart((s) => s.sent)
+  const markSent = useCart((s) => s.markSent)
+
+  // Lo efímero sigue en useState: detalles de pantalla, nada que escribir.
   const [showErrors, setShowErrors] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
-  /** La URL ya armada, apenas se disparó la apertura del chat. */
-  const [sentUrl, setSentUrl] = useState<string | null>(null)
 
   const totals = computeTotals(lines)
-  const missing = REQUIRED.filter((f) => form[f.key].trim() === "")
-  const message = useMemo(() => buildOrderMessage(lines, form), [lines, form])
+  const missing = REQUIRED.filter((f) => customer[f.key].trim() === "")
+  const message = useMemo(() => buildOrderMessage(lines, customer), [lines, customer])
 
   function update(key: keyof Customer, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+    setCustomerField(key, value)
     setConfigError(null)
   }
 
@@ -51,31 +54,25 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
     setShowErrors(true)
     if (missing.length > 0) return
 
-    let url: string
+    let links: CheckoutLinks
     try {
-      url = buildCheckoutUrl(lines, form)
+      links = buildCheckoutLinks(lines, customer)
     } catch (error) {
       setConfigError(error instanceof Error ? error.message : "No pudimos armar el enlace.")
       return
     }
 
     setConfigError(null)
-    setSentUrl(url)
-    openChat(url)
+    // Primero se anota el pedido en el store y recién después se abre el chat:
+    // si el enlace se lleva la pestaña, al volver todo está donde estaba.
+    markSent({ chat: links.chat, web: links.web, message: links.message })
+    openChat(links.chat)
   }
 
   // Todos los hooks están declarados arriba, así que este corte temprano
   // no rompe el orden de render.
-  if (sentUrl) {
-    return (
-      <SentPanel
-        url={sentUrl}
-        totals={totals}
-        onFix={() => setSentUrl(null)}
-        onClearCart={onClearCart}
-        onKeepShopping={onKeepShopping}
-      />
-    )
+  if (step === "sent" && sent) {
+    return <SentPanel sent={sent} totals={totals} onEdit={() => setStep("checkout")} />
   }
 
   return (
@@ -83,7 +80,7 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
       <div className="thin-scroll flex-1 overflow-y-auto px-6 py-6">
         <button
           type="button"
-          onClick={onBack}
+          onClick={() => setStep("cart")}
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-stone transition-colors hover:text-bark"
         >
           <Icon name="arrowRight" className="size-4 rotate-180" />
@@ -98,7 +95,7 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
 
         <div className="mt-7 space-y-4">
           {REQUIRED.map((field) => {
-            const invalid = showErrors && form[field.key].trim() === ""
+            const invalid = showErrors && customer[field.key].trim() === ""
             return (
               <div key={field.key}>
                 <label htmlFor={`checkout-${field.key}`} className="eyebrow block text-stone">
@@ -107,7 +104,7 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
                 <input
                   id={`checkout-${field.key}`}
                   type="text"
-                  value={form[field.key]}
+                  value={customer[field.key]}
                   onChange={(e) => update(field.key, e.target.value)}
                   placeholder={field.placeholder}
                   autoComplete={
@@ -137,7 +134,7 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
             <textarea
               id="checkout-notes"
               rows={3}
-              value={form.notes}
+              value={customer.notes}
               onChange={(e) => update("notes", e.target.value)}
               placeholder="Retiro en el taller, lo dejo en portería, prefiero transferencia…"
               className={`${FIELD} mt-2 resize-none`}
@@ -212,7 +209,8 @@ export function CheckoutForm({ lines, onBack, onClearCart, onKeepShopping }: Che
  *
  * En el celular navegamos en la misma pestaña: con target="_blank" varios
  * terminan en web.whatsapp.com pidiendo login, y el deep link directo a la app
- * anda mejor. El carrito vive en localStorage, volver no lo borra.
+ * anda mejor. Que la navegación se lleve el sitio ya no es un problema: el
+ * pedido y los datos están en localStorage y SentPanel aparece al volver.
  */
 function openChat(url: string) {
   if (window.matchMedia("(max-width: 767px)").matches) {
@@ -229,22 +227,66 @@ function openChat(url: string) {
   link.remove()
 }
 
+/**
+ * Copia el mensaje al portapapeles, con respaldo para contextos sin HTTPS.
+ *
+ * navigator.clipboard sólo existe en contexto seguro y puede fallar si la
+ * pestaña perdió el foco —justo cuando el cliente volvió de WhatsApp—. El camino
+ * del <textarea> sigue marchando en http de red local, que es como se prueba
+ * desde el celular.
+ */
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // se prueba con el respaldo
+  }
+
+  try {
+    const area = document.createElement("textarea")
+    area.value = text
+    area.setAttribute("readonly", "")
+    area.style.position = "fixed"
+    area.style.top = "-9999px"
+    document.body.append(area)
+    area.select()
+    const ok = document.execCommand("copy")
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
+
 interface SentPanelProps {
-  url: string
+  sent: SentOrder
   totals: Totals
-  onFix: () => void
-  onClearCart: () => void
-  onKeepShopping: () => void
+  /** Volver al formulario para retocar un dato sin perder lo escrito. */
+  onEdit: () => void
 }
 
 /**
  * Confirmación del envío.
  *
- * Un deep link no devuelve señal de "esto efectivamente abrió", así que no
- * prometemos haber abierto WhatsApp: mostramos un enlace real de respaldo. Si
- * la ventana no apareció, el cliente lo toca y el circuito cierra igual.
+ * Un deep link no devuelve señal de "esto efectivamente abrió", así que el panel
+ * no lo promete: ofrece tres salidas reales. Reabrir el chat, entrar al chat web
+ * (la PC sin la app de escritorio se quedaba sin opciones), y copiar el texto por
+ * si el precargado salió cortado en algún dispositivo. El pedido ya está anotado
+ * en localStorage, entonces volver nunca borra nada.
  */
-function SentPanel({ url, totals, onFix, onClearCart, onKeepShopping }: SentPanelProps) {
+function SentPanel({ sent, totals, onEdit }: SentPanelProps) {
+  const clear = useCart((s) => s.clear)
+  const setStep = useCart((s) => s.setStep)
+  const closeCart = useCart((s) => s.closeCart)
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    setCopied(await copyToClipboard(sent.message))
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="thin-scroll flex-1 overflow-y-auto px-6 py-8">
@@ -252,26 +294,64 @@ function SentPanel({ url, totals, onFix, onClearCart, onKeepShopping }: SentPane
           <Icon name="check" className="size-7 text-olive" strokeWidth={2} />
         </span>
 
-        <h2 className="mt-5 font-display text-2xl text-bark">Ya está armado el pedido</h2>
+        <h2 className="mt-5 font-display text-2xl text-bark">Tu pedido está listo para enviar</h2>
         <p className="mt-2 text-sm leading-relaxed text-stone">
-          Abrimos WhatsApp con el pedido escrito: sólo tenés que apretar enviar. Si no
-          apareció ninguna ventana, tocá este botón.
+          Dejamos el mensaje escrito en WhatsApp: sólo falta que aprietes enviar. Hasta ahí no
+          sale nada, y el carrito queda intacto por si volvés.
         </p>
 
         <a
-          href={url}
+          href={sent.chat}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-full bg-clay py-4 text-sm font-medium text-bone transition-colors hover:bg-clay-deep"
         >
           <Icon name="whatsapp" className="size-[18px]" />
-          Abrir WhatsApp
+          Abrir WhatsApp de nuevo
         </a>
+
+        <p className="mt-4 text-xs leading-relaxed text-stone">
+          ¿No abrió nada o te dice que no tenés la app instalada? Entrá al chat web. Y si el
+          mensaje salió vacío, copiá el texto y pegalo vos en el chat.
+        </p>
+
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <a
+            href={sent.web}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-full border border-line px-4 py-3 text-sm text-bark transition-colors hover:border-bark"
+          >
+            <Icon name="arrowRight" className="size-4" />
+            Chat web
+          </a>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex items-center justify-center gap-2 rounded-full border border-line px-4 py-3 text-sm text-bark transition-colors hover:border-bark"
+          >
+            <Icon
+              name={copied ? "check" : "copy"}
+              className="size-4"
+              strokeWidth={copied ? 2 : 1.5}
+            />
+            {copied ? "Copiado" : "Copiar mensaje"}
+          </button>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-line bg-shell/50">
+          <p className="eyebrow border-b border-line px-4 py-2.5 text-stone">
+            Este es el texto del mensaje
+          </p>
+          <pre className="thin-scroll max-h-52 overflow-auto px-4 py-3 text-[11px] leading-relaxed whitespace-pre-wrap text-ink">
+            {sent.message}
+          </pre>
+        </div>
 
         <button
           type="button"
-          onClick={onFix}
-          className="mt-3 inline-flex items-center gap-1.5 text-sm text-stone transition-colors hover:text-bark"
+          onClick={onEdit}
+          className="mt-4 inline-flex items-center gap-1.5 text-sm text-stone transition-colors hover:text-bark"
         >
           <Icon name="arrowRight" className="size-4 rotate-180" />
           Corregir algún dato
@@ -288,20 +368,23 @@ function SentPanel({ url, totals, onFix, onClearCart, onKeepShopping }: SentPane
           </span>
         </div>
         <p className="mt-1 text-xs leading-relaxed text-stone">
-          El carrito queda guardado por si querés revisar el pedido antes de enviarlo.
+          El carrito sigue guardado hasta que lo borres vos, así que dá ir y venir del chat.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <button
             type="button"
-            onClick={onKeepShopping}
+            onClick={() => {
+              setStep("cart")
+              closeCart()
+            }}
             className="rounded-full border border-line px-4 py-3 text-sm text-bark transition-colors hover:border-bark"
           >
             Seguir comprando
           </button>
           <button
             type="button"
-            onClick={onClearCart}
+            onClick={clear}
             className="flex items-center justify-center gap-2 rounded-full bg-bark px-4 py-3 text-sm text-bone transition-colors hover:bg-clay"
           >
             <Icon name="trash" className="size-4" />

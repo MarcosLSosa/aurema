@@ -62,8 +62,8 @@ export function Footer() {
 
       <div className="border-t border-line/70">
         <p className="mx-auto max-w-7xl px-5 py-5 text-xs text-stone sm:px-8">
-          © {new Date().getFullYear()} {STORE.name}. Sitio demo — los números y precios son
-          de ejemplo.
+          © {new Date().getFullYear()} {STORE.name}. Sitio demo — los precios son de
+          ejemplo; el WhatsApp sí es el número real de la tienda.
         </p>
       </div>
     </footer>

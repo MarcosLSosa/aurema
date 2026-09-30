@@ -20,6 +20,12 @@ const GLYPHS = {
     </>
   ),
   close: <path d="m6 6 12 12M18 6 6 18" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="11.5" height="11.5" rx="2.6" />
+      <path d="M15.6 6.4A2.9 2.9 0 0 0 12.7 3.5H6.4A2.9 2.9 0 0 0 3.5 6.4v6.3a2.9 2.9 0 0 0 2.9 2.9" />
+    </>
+  ),
   arrowRight: <path d="M4.5 12h15m-5.5-5.5L19.5 12 14 17.5" />,
   check: <path d="m5 12.5 4.5 4.5L19 7" />,
   leaf: (

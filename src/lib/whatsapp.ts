@@ -58,14 +58,14 @@ export function buildOrderMessage(lines: CartLine[], customer: Customer): string
     "",
   ]
 
+  // Una línea por producto, a propósito: con textos muy largos algunos
+  // dispositivos cortan el mensaje precargado del enlace, así que cada carácter
+  // que sobre es margen ganado.
   const items = lines.map((line, index) => {
     const lineTotal = line.unitPrice * line.qty
-    return [
-      `*${index + 1}. ${line.name}*`,
-      `${line.qty} × ${formatPrice(line.unitPrice)} = ${formatPrice(lineTotal)}`,
-      "",
-    ].join("\n")
+    return `*${index + 1}. ${line.name}* ${line.qty} × ${formatPrice(line.unitPrice)} = ${formatPrice(lineTotal)}`
   })
+  items.push("")
 
   const totals = [
     RULE,
@@ -97,11 +97,30 @@ export function buildOrderMessage(lines: CartLine[], customer: Customer): string
 }
 
 /**
- * Genera el enlace api.whatsapp.com con el mensaje ya codificado.
+ * Los dos hosts oficiales de click-to-chat.
+ *
+ * `web` no es un capricho: en una PC sin la app de escritorio instalada,
+ * api.whatsapp.com responde "Looks like you don't have WhatsApp installed" y no
+ * hay por dónde seguir. web.whatsapp.com abre el chat en el navegador, así que
+ * el pedido no muere en un callejón sin salida.
+ */
+const SEND_HOSTS = {
+  chat: "https://api.whatsapp.com/send",
+  web: "https://web.whatsapp.com/send",
+} as const
+
+export type SendHost = keyof typeof SEND_HOSTS
+
+/**
+ * Genera el enlace con el mensaje ya codificado.
  * Lanza Error si el número no tiene pinta de ser válido, para que la UI
  * pueda mostrar el problema en vez de abrir un chat roto.
  */
-export function buildWhatsAppUrl(message: string, phone: string = STORE.whatsappNumber): string {
+export function buildWhatsAppUrl(
+  message: string,
+  phone: string = STORE.whatsappNumber,
+  host: SendHost = "chat",
+): string {
   const digits = normalizePhone(phone)
 
   if (digits.length < 10 || digits.length > 15) {
@@ -111,11 +130,23 @@ export function buildWhatsAppUrl(message: string, phone: string = STORE.whatsapp
     )
   }
 
-  return `https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`
+  return `${SEND_HOSTS[host]}?phone=${digits}&text=${encodeURIComponent(message)}`
 }
 
-/** Atajo para el botón: líneas + cliente -> URL lista para abrir. */
-export function buildCheckoutUrl(lines: CartLine[], customer: Customer): string {
+/** Lo que necesita el panel de confirmación para reabrir el pedido sin rellenar nada. */
+export interface CheckoutLinks {
+  message: string
+  chat: string
+  web: string
+}
+
+/** Atajo para el botón: líneas + cliente -> el mensaje y los dos enlaces listos. */
+export function buildCheckoutLinks(lines: CartLine[], customer: Customer): CheckoutLinks {
   if (lines.length === 0) throw new Error("No podés finalizar un carrito vacío.")
-  return buildWhatsAppUrl(buildOrderMessage(lines, customer))
+  const message = buildOrderMessage(lines, customer)
+  return {
+    message,
+    chat: buildWhatsAppUrl(message),
+    web: buildWhatsAppUrl(message, STORE.whatsappNumber, "web"),
+  }
 }
