@@ -2,7 +2,16 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      interactive-widget=resizes-content (Chrome/Edge Android 115+) hace que el
+      teclado achique el layout viewport: los paneles fixed, como el drawer del
+      carrito, se recalculan y el botón del pie no queda detrás del teclado.
+      Lo ignoran los que no lo soportan; ahí responde useKeyboardAnchoring.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#f6f2ea" />
 
     <title>Aurema — Tote bags de algodón orgánico y lino</title>

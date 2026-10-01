@@ -11,14 +11,42 @@ import type { SentOrder } from "@/store/cartStore"
 import type { CartLine, Customer } from "@/types"
 
 /** Campos sin los cuales no tiene sentido armar el pedido. */
-const REQUIRED: { key: keyof Customer; label: string; placeholder: string }[] = [
-  { key: "name", label: "Nombre y apellido", placeholder: "María Pérez" },
-  { key: "address", label: "Dirección de envío", placeholder: "Av. Siempreviva 742, 3° B" },
-  { key: "city", label: "Ciudad o localidad", placeholder: "Córdoba Capital" },
+const REQUIRED: {
+  key: keyof Customer
+  label: string
+  placeholder: string
+  /** Lo que muestra la tecla de acción del teclado del celular. */
+  enterKeyHint: "next" | "go"
+}[] = [
+  {
+    key: "name",
+    label: "Nombre y apellido",
+    placeholder: "María Pérez",
+    enterKeyHint: "next",
+  },
+  {
+    key: "address",
+    label: "Dirección de envío",
+    placeholder: "Av. Siempreviva 742, 3° B",
+    enterKeyHint: "next",
+  },
+  {
+    key: "city",
+    label: "Ciudad o localidad",
+    placeholder: "Córdoba Capital",
+    enterKeyHint: "go",
+  },
 ]
 
+/**
+ * `text-base` (16px) y no `text-sm`: iOS Safari zooma la página al enfocar un
+ * campo cuya fuente calculada es menor a 16px. Ese zoom empuja el pie del
+ * drawer —donde está "Finalizar pedido por WhatsApp"— fuera de la pantalla, y
+ * como el overlay bloquea el scroll de la página no hay forma de volver a él.
+ * Con 16px el navegador no zooma y el botón se queda donde está.
+ */
 const FIELD =
-  "w-full rounded-xl border border-line bg-bone px-4 py-3 text-sm text-bark placeholder:text-stone/55 transition-colors focus:border-clay focus:outline-none"
+  "w-full rounded-xl border border-line bg-bone px-4 py-3 text-base text-bark placeholder:text-stone/55 transition-colors focus:border-clay focus:outline-none"
 
 interface CheckoutFormProps {
   lines: CartLine[]
@@ -76,8 +104,8 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex h-full flex-col" noValidate>
-      <div className="thin-scroll flex-1 overflow-y-auto px-6 py-6">
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+      <div className="thin-scroll min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <button
           type="button"
           onClick={() => setStep("cart")}
@@ -107,6 +135,7 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
                   value={customer[field.key]}
                   onChange={(e) => update(field.key, e.target.value)}
                   placeholder={field.placeholder}
+                  enterKeyHint={field.enterKeyHint}
                   autoComplete={
                     field.key === "name"
                       ? "name"
@@ -174,7 +203,7 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
       </div>
 
       {/* Pie fijo con el total y la acción principal */}
-      <div className="border-t border-line bg-shell/60 px-6 py-5">
+      <div className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-stone">Total a coordinar</span>
           <span className="font-display text-2xl text-bark tabular-nums">
@@ -192,6 +221,12 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
           <Icon name="whatsapp" className="size-[18px]" />
           Finalizar pedido por WhatsApp
         </button>
+
+        {/* Respaldo por si algún navegador igual esconde el pie con el teclado:
+            la tecla de acción del último campo envía el formulario. */}
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-stone">
+          ¿El teclado te tapa el botón? Apretá «Ir» en el teclado y el pedido se arma igual.
+        </p>
       </div>
     </form>
   )
@@ -288,8 +323,8 @@ function SentPanel({ sent, totals, onEdit }: SentPanelProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="thin-scroll flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="thin-scroll min-h-0 flex-1 overflow-y-auto px-6 py-8">
         <span className="grid size-16 place-items-center rounded-full bg-olive/15">
           <Icon name="check" className="size-7 text-olive" strokeWidth={2} />
         </span>
@@ -358,7 +393,7 @@ function SentPanel({ sent, totals, onEdit }: SentPanelProps) {
         </button>
       </div>
 
-      <div className="border-t border-line bg-shell/60 px-6 py-5">
+      <div className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-stone">
             {totals.itemCount} {totals.itemCount === 1 ? "unidad" : "unidades"}

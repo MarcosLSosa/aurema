@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
+import { useKeyboardAnchoring } from "@/hooks/useKeyboardAnchoring"
 import { formatPrice } from "@/lib/format"
 import { computeTotals } from "@/lib/whatsapp"
 import { SENT_ORDER_TTL_MS, useCart } from "@/store/cartStore"
@@ -19,6 +20,11 @@ export function CartDrawer() {
   const setStep = useCart((s) => s.setStep)
 
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // El panel se re-ancla al viewport que deja libre el teclado (ver el hook):
+  // sin esto, el botón del pie queda detrás del teclado en cuanto el cliente
+  // toca un campo del formulario.
+  useKeyboardAnchoring(panelRef, isOpen)
 
   const totals = computeTotals(lines)
   const remaining = STORE.freeShippingFrom - totals.subtotal
@@ -43,12 +49,16 @@ export function CartDrawer() {
 
     document.addEventListener("keydown", onKeyDown)
     const previousOverflow = document.body.style.overflow
+    const previousScrollY = window.scrollY
     document.body.style.overflow = "hidden"
     panelRef.current?.focus()
 
     return () => {
       document.removeEventListener("keydown", onKeyDown)
       document.body.style.overflow = previousOverflow
+      // El teclado de iOS desplaza el documento para mostrar el campo enfocado.
+      // Al cerrar el drawer se devuelve la página al lugar donde estaba.
+      window.scrollTo(0, previousScrollY)
     }
   }, [isOpen, closeCart])
 
@@ -69,10 +79,17 @@ export function CartDrawer() {
         aria-modal="true"
         aria-label={step === "cart" ? "Carrito de compras" : "Datos para el pedido"}
         tabIndex={-1}
-        className="animate-drawer-in absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-bone shadow-[-24px_0_60px_-30px_rgb(31_27_22/0.5)] outline-none"
+        // Las variables las escribe useKeyboardAnchoring: con el teclado abierto
+        // el panel mide lo que hay por encima del teclado (100% si no hay
+        // ninguno) y baja lo que iOS haya desplazado al enfocarse un campo.
+        style={{
+          top: "var(--drawer-top, 0px)",
+          height: "var(--drawer-height, 100%)",
+        }}
+        className="animate-drawer-in absolute top-0 right-0 flex w-full max-w-md flex-col overflow-hidden bg-bone shadow-[-24px_0_60px_-30px_rgb(31_27_22/0.5)] outline-none"
       >
         {/* Cabecera */}
-        <header className="flex items-center justify-between border-b border-line px-6 py-5">
+        <header className="flex shrink-0 items-center justify-between border-b border-line px-6 py-5">
           <div>
             <h2 className="font-display text-xl text-bark">
               {step === "sent"
@@ -104,13 +121,13 @@ export function CartDrawer() {
           <CheckoutForm lines={lines} />
         ) : (
           <>
-            <ul className="thin-scroll flex-1 divide-y divide-line overflow-y-auto px-6">
+            <ul className="thin-scroll min-h-0 flex-1 divide-y divide-line overflow-y-auto px-6">
               {lines.map((line) => (
                 <CartLineRow key={line.productId} line={line} />
               ))}
             </ul>
 
-            <footer className="border-t border-line bg-shell/60 px-6 py-5">
+            <footer className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
               {remaining > 0 ? (
                 <p className="mb-4 flex items-center gap-2 text-xs text-stone">
                   <Icon name="truck" className="size-4 shrink-0 text-olive" />
