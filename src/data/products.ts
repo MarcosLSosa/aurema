@@ -75,7 +75,6 @@ export const PRODUCTS: Product[] = [
     colors: ["#F2EADF", "#49A6B8", "#D9486A"],
     materials: ["100% algodón", "Diseño ilustrado"],
     image: "/images/instagram/modelo-5.jpg",
-    badge: "Upcycling",
     art: { bg: "#CFC3AA", body: "#A2937A", accent: "#33302A", pattern: "retícula" },
   },
   {
