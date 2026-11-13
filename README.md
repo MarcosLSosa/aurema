@@ -1,7 +1,7 @@
 # Aurema
 
-Catálogo minimalista de tote bags artesanales. Sin backend y sin pasarela de pago: el
-carrito se arma en el navegador y el pedido se cierra por WhatsApp.
+Tienda online de tote bags 100% algodón y accesorios ecológicos. El carrito se arma en el
+navegador y los pedidos, junto con el costo de envío, se coordinan por WhatsApp.
 
 **Stack:** Vite + React 19 + TypeScript + Tailwind CSS v4 + Zustand.
 
@@ -33,13 +33,13 @@ Un solo archivo cambia todo: **`src/config.ts`**.
 | Campo | Para qué |
 | --- | --- |
 | `whatsappNumber` | El número que recibe los pedidos, en formato E.164 sin `+` ni espacios (hoy `5492657209503`). |
-| `currency` / `locale` | Moneda y formato de los precios (`es-AR` → `$ 28.900`). |
-| `shippingFlat` / `freeShippingFrom` | Costo de envío y umbral a partir del cual sale sin cargo. |
-| `email`, `instagram`, `location`, `hours` | Pie de página y sección de contacto. |
+| `currency` / `locale` | Moneda y formato de los precios (`es-AR` → `$ 18.000`). |
+| `instagram` / `instagramUrl` | Perfil de Instagram de la tienda. |
+| `claim` | Presentación breve de Aurema. |
 
-`src/data/products.ts` es el catálogo. Cada producto puede tener foto real en el campo
-`image`; si está vacío, la ficha dibuja un arte SVG generado localmente
-(`src/components/ui/ProductArt.tsx`) para que nada dependa de una CDN.
+`src/data/products.ts` es el catálogo; las fotos de las tote bags del perfil están en
+`public/images/instagram/`. El envío se coordina por WhatsApp y no se suma al subtotal de
+productos hasta confirmar su costo con la tienda.
 
 ## Cómo cierra una venta
 
@@ -51,9 +51,11 @@ Un solo archivo cambia todo: **`src/config.ts`**.
    escribir todos sus datos otra vez.
 2. En el drawer completa nombre, dirección y ciudad (`CheckoutForm.tsx`). Los campos leen y
    escriben el store, no un `useState` del componente.
-3. `src/lib/whatsapp.ts` arma el mensaje con las líneas, el subtotal, el envío y el total y
-   lo codifica en dos enlaces: `api.whatsapp.com/send?phone=...&text=...` y su equivalente
-   en `web.whatsapp.com/send`. El número sale de `STORE.whatsappNumber` y pasa por
+3. `src/lib/whatsapp.ts` arma el mensaje con las líneas y el subtotal de productos; el envío
+   se coordina por WhatsApp y no se suma hasta confirmar su costo. El mensaje se codifica
+   en dos enlaces:
+   `api.whatsapp.com/send?phone=...&text=...` y su equivalente en `web.whatsapp.com/send`.
+   El número sale de `STORE.whatsappNumber` y pasa por
    `normalizePhone`, que también usan los enlaces sueltos de contacto (`buildContactUrl`).
 4. `markSent` anota el pedido en el store y recién después se abre el chat: en el celular
    navegando en la misma pestaña, porque el deep link directo a la app rinde mejor que una
@@ -117,11 +119,12 @@ Ningún truco de viewport llega al 100% de los webviews, así que quedan redes:
 src/
   components/
     cart/       CartDrawer, CartLineRow, CheckoutForm
-    home/       Hero, Materials
+    home/       Hero, Materials, IntroSplash
     layout/     Header, Footer
     products/   FilterBar, ProductGrid, ProductCard
     ui/         Icon (SVG inline), ProductArt (arte generado)
-  data/         products.ts
+  data/         products.ts (catálogo de Aurema, ARS 18.000 por tote bag)
+  public/images/instagram/  Logo y fotos de los diseños de Instagram
   hooks/        useKeyboardAnchoring.ts (el drawer no se esconde tras el teclado)
   lib/          format.ts, whatsapp.ts
   store/        cartStore.ts

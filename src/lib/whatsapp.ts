@@ -6,8 +6,7 @@ import { formatPrice } from "./format"
 export interface Totals {
   /** Suma de unitPrice × qty de todas las líneas. */
   subtotal: number
-  /** 0 si el carrito está vacío o se superó STORE.freeShippingFrom. */
-  shipping: number
+  /** Total de productos, sin incluir envío. */
   total: number
   /** Cantidad total de unidades (no de líneas). */
   itemCount: number
@@ -15,15 +14,12 @@ export interface Totals {
 
 const RULE = "——————————————"
 
-/** Calcula subtotal, envío y total. Pura: misma entrada, misma salida. */
+/** Calcula el subtotal de productos; el envío se confirma por WhatsApp. */
 export function computeTotals(lines: CartLine[]): Totals {
   const subtotal = lines.reduce((acc, line) => acc + line.unitPrice * line.qty, 0)
   const itemCount = lines.reduce((acc, line) => acc + line.qty, 0)
 
-  const freeShipping = itemCount === 0 || subtotal >= STORE.freeShippingFrom
-  const shipping = freeShipping ? 0 : STORE.shippingFlat
-
-  return { subtotal, shipping, total: subtotal + shipping, itemCount }
+  return { subtotal, total: subtotal, itemCount }
 }
 
 /**
@@ -50,7 +46,7 @@ export function buildContactUrl(phone: string = STORE.whatsappNumber): string {
  * Usa * para que WhatsApp renderice las partes en negrita.
  */
 export function buildOrderMessage(lines: CartLine[], customer: Customer): string {
-  const { subtotal, shipping, total, itemCount } = computeTotals(lines)
+  const { subtotal, total, itemCount } = computeTotals(lines)
 
   const header = [
     `*PEDIDO — ${STORE.name}*`,
@@ -69,11 +65,9 @@ export function buildOrderMessage(lines: CartLine[], customer: Customer): string
 
   const totals = [
     RULE,
-    `Subtotal (${itemCount} ${itemCount === 1 ? "unidad" : "unidades"}): ${formatPrice(subtotal)}`,
-    shipping === 0
-      ? "Envío: SIN CARGO"
-      : `Envío: ${formatPrice(shipping)}`,
-    `*TOTAL: ${formatPrice(total)}*`,
+    `Subtotal de productos (${itemCount} ${itemCount === 1 ? "unidad" : "unidades"}): ${formatPrice(subtotal)}`,
+    "Envío: a coordinar por WhatsApp",
+    `*Total de productos: ${formatPrice(total)}*`,
     "",
   ]
 
@@ -126,7 +120,7 @@ export function buildWhatsAppUrl(
   if (digits.length < 10 || digits.length > 15) {
     throw new Error(
       `Número de WhatsApp inválido ("${phone}"). Usalo en formato internacional sin "+", ` +
-        "por ejemplo 5491123456789. Configuralo en src/config.ts.",
+        "Configurá el número de la tienda en src/config.ts.",
     )
   }
 

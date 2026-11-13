@@ -1,5 +1,5 @@
 /** Categorías disponibles en el catálogo. */
-export type Category = "lisas" | "estampadas" | "eco-canvas" | "tejidas"
+export type Category = "estampadas"
 
 export type CategoryFilter = Category | "todas"
 

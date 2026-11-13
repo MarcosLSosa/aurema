@@ -165,7 +165,7 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
               rows={3}
               value={customer.notes}
               onChange={(e) => update("notes", e.target.value)}
-              placeholder="Retiro en el taller, lo dejo en portería, prefiero transferencia…"
+              placeholder="Contanos si tenés alguna preferencia para la entrega…"
               className={`${FIELD} mt-2 resize-none`}
             />
           </div>
@@ -202,16 +202,16 @@ export function CheckoutForm({ lines }: CheckoutFormProps) {
         )}
       </div>
 
-      {/* Pie fijo con el total y la acción principal */}
+      {/* Pie fijo con el subtotal de productos y la acción principal */}
       <div className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
         <div className="flex items-baseline justify-between">
-          <span className="text-sm text-stone">Total a coordinar</span>
+          <span className="text-sm text-stone">Subtotal de productos</span>
           <span className="font-display text-2xl text-bark tabular-nums">
             {formatPrice(totals.total)}
           </span>
         </div>
         <p className="mt-1 text-xs text-stone">
-          Se confirma y se paga recién en el chat con {STORE.name}.
+          El envío y el total final se coordinan por WhatsApp con {STORE.name}.
         </p>
 
         <button
@@ -396,7 +396,7 @@ function SentPanel({ sent, totals, onEdit }: SentPanelProps) {
       <div className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-stone">
-            {totals.itemCount} {totals.itemCount === 1 ? "unidad" : "unidades"}
+            {totals.itemCount} {totals.itemCount === 1 ? "unidad" : "unidades"} · subtotal de productos
           </span>
           <span className="font-display text-2xl text-bark tabular-nums">
             {formatPrice(totals.total)}

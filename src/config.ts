@@ -5,10 +5,9 @@
 
 export const STORE = {
   name: "Aurema",
-  claim: "Tote bags hechas a mano",
-  instagram: "aurema.totes",
-  instagramUrl: "https://instagram.com/aurema.totes",
-  email: "hola@aurema.com.ar",
+  claim: "Tote bags 100% algodón y accesorios ecológicos",
+  instagram: "aurema.ok",
+  instagramUrl: "https://www.instagram.com/aurema.ok/",
 
   /**
    * Número de la tienda en formato internacional, SOLO dígitos, sin "+",
@@ -19,11 +18,6 @@ export const STORE = {
   /** Moneda y locale usados por formatPrice(). */
   currency: "ARS",
   locale: "es-AR",
-
-  /** Envío fijo mientras no haya una integración de correo real. */
-  shippingFlat: 4500,
-  /** Monto a partir del cual el envío es sin cargo. */
-  freeShippingFrom: 90000,
 
   /** Cantidades máximas por línea: frena pedidos accidentales masivos. */
   maxQtyPerItem: 20,

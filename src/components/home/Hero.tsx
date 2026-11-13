@@ -6,12 +6,10 @@ import { PRODUCTS } from "@/data/products"
 const HERO_PRODUCT = PRODUCTS[0]
 
 const MARQUEE = [
-  "Algodón orgánico",
-  "Lino sin teñir",
-  "Serigrafía a mano",
-  "Lona recuperada",
-  "Tintes al agua",
-  "Lotes de 40",
+  "Tote bags 100% algodón",
+  "Diseños para celebrar tu vida",
+  "Accesorios ecológicos",
+  "Ilustraciones llenas de color",
 ]
 
 export function Hero() {
@@ -25,24 +23,23 @@ export function Hero() {
 
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 pt-14 pb-20 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-20 lg:pb-28">
         {/* Columna de texto */}
-        <div className="animate-fade-up">
+        <div className="order-2 animate-fade-up lg:order-1">
           <p className="eyebrow flex items-center gap-2.5 text-clay">
             <span className="h-px w-8 bg-clay" />
-            Colección 2026
+            Diseños para celebrar tu vida
           </p>
 
           <h1 className="mt-6 text-[clamp(2.9rem,7.2vw,5.1rem)] leading-[0.95]">
-            Una bolsa
+            Llevá tu
             <br />
-            <em className="font-light italic text-clay">que dura</em> más
+            <em className="font-light italic text-clay">mundo</em> con vos
             <br />
-            que la moda.
+            a todas partes.
           </h1>
 
           <p className="mt-7 max-w-md text-[1.02rem] leading-relaxed text-stone">
-            Tote bags de algodón orgánico, lino sin teñir y lona recuperada. Cosidas una por
-            una en lotes chicos, con materiales que aguantan años de feria, biblioteca y
-            compras.
+            Tote bags 100% algodón y accesorios ecológicos con diseños para acompañarte en
+            tus planes de todos los días.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -62,15 +59,15 @@ export function Hero() {
               className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3.5 text-sm text-bark transition-colors hover:border-bark"
             >
               <Icon name="leaf" className="size-4 text-olive" />
-              Qué usamos
+              Nuestra esencia
             </a>
           </div>
 
           <dl className="mt-12 flex flex-wrap gap-x-10 gap-y-5 border-t border-line pt-7">
             {[
-              ["6", "modelos activos"],
-              ["4", "tejedoras aliadas"],
-              ["0", "material nuevo en Cosecha"],
+              ["100%", "algodón"],
+              ["6", "diseños ilustrados"],
+              ["$18.000", "cada tote bag"],
             ].map(([value, label]) => (
               <div key={label}>
                 <dt className="font-display text-3xl text-bark">{value}</dt>
@@ -81,18 +78,27 @@ export function Hero() {
         </div>
 
         {/* Columna de imagen */}
-        <div className="relative animate-fade-up [animation-delay:120ms]">
-          <div className="relative overflow-hidden rounded-[2rem] border border-line bg-shell">
-            <ProductArt
-              art={HERO_PRODUCT.art}
-              name={HERO_PRODUCT.name}
-              className="h-full w-full"
-            />
+        <div className="relative order-1 animate-fade-up [animation-delay:120ms] lg:order-2">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-line bg-shell">
+            {HERO_PRODUCT.image ? (
+              <img
+                src={HERO_PRODUCT.image}
+                alt={`Tote bag ${HERO_PRODUCT.name} de Aurema`}
+                className="h-full w-full object-cover"
+                fetchPriority="high"
+              />
+            ) : (
+              <ProductArt
+                art={HERO_PRODUCT.art}
+                name={HERO_PRODUCT.name}
+                className="h-full w-full"
+              />
+            )}
 
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-linear-to-t from-bark/45 to-transparent p-6">
               <div>
                 <p className="text-[11px] tracking-[0.18em] text-bone/80 uppercase">
-                  Tote {HERO_PRODUCT.name}
+                  Modelo {HERO_PRODUCT.name}
                 </p>
                 <p className="mt-1 text-sm text-bone">{HERO_PRODUCT.tagline}</p>
               </div>
@@ -101,9 +107,9 @@ export function Hero() {
 
           {/* ficha flotante */}
           <div className="absolute -bottom-6 -left-4 hidden rounded-2xl border border-line bg-bone px-5 py-4 shadow-[0_18px_40px_-24px_rgb(31_27_22/0.55)] sm:block">
-            <p className="eyebrow text-stone">Producción</p>
-            <p className="mt-1.5 font-display text-lg text-bark">Lote de 40</p>
-            <p className="mt-0.5 text-xs text-stone">y no se reedita</p>
+            <p className="eyebrow text-stone">Un diseño para vos</p>
+            <p className="mt-1.5 font-display text-lg text-bark">$18.000</p>
+            <p className="mt-0.5 text-xs text-stone">100% algodón</p>
           </div>
         </div>
       </div>

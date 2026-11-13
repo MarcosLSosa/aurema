@@ -10,18 +10,18 @@ interface Item {
 const ITEMS: Item[] = [
   {
     icon: "leaf",
-    title: "Fibra con trazabilidad",
-    body: "Algodón orgánico certificado GOTS y lino europeo sin teñir. Cero poliéster: si no se puede compostar, no entra al taller.",
+    title: "Algodón 100%",
+    body: "Tote bags de algodón para acompañarte en tus planes de todos los días.",
   },
   {
     icon: "truck",
-    title: "Lotes chicos, cero stock muerto",
-    body: "Entre 20 y 40 unidades por modelo. Cuando se agotan, no los reeditamos igual: el próximo lote cambia la estampa.",
+    title: "Diseños que hablan de vos",
+    body: "Ilustraciones de luna, naturaleza y personajes para sumar color a tu rutina.",
   },
   {
     icon: "bag",
-    title: "Costuras de seguridad",
-    body: "Doble pespunte en asas y base. Si se rompe en el primer año, la reparás sin cargo y la devolvemos.",
+    title: "Un accesorio para cada día",
+    body: "Llevá tus esenciales a la feria, a un paseo o a donde te lleve el día.",
   },
 ]
 
@@ -30,9 +30,9 @@ export function Materials() {
     <section id="materiales" className="scroll-mt-28 border-t border-line bg-shell/40">
       <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="max-w-xl">
-          <p className="eyebrow text-clay">Materiales</p>
+          <p className="eyebrow text-clay">El mundo Aurema</p>
           <h2 className="mt-4 text-[clamp(1.9rem,4vw,2.9rem)] leading-tight">
-            Lo que no se ve también cuenta
+            Pequeños detalles, mucha personalidad
           </h2>
         </div>
 

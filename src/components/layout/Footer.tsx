@@ -9,8 +9,7 @@ export function Footer() {
         <div>
           <p className="font-display text-2xl text-bark">{STORE.name}</p>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-stone">
-            {STORE.claim}. Producimos en lotes de entre 20 y 40 unidades para no acumular
-            stock muerto: se teje, se estampa y se envía.
+            {STORE.claim}. Diseños con color y personalidad para acompañarte todos los días.
           </p>
         </div>
 
@@ -38,32 +37,20 @@ export function Footer() {
                 <Icon name="instagram" className="size-4" />@{STORE.instagram}
               </a>
             </li>
-            <li>
-              <a
-                href={`mailto:${STORE.email}`}
-                className="inline-flex items-center gap-2 text-ink transition-colors hover:text-clay"
-              >
-                <Icon name="arrowRight" className="size-4" />
-                {STORE.email}
-              </a>
-            </li>
           </ul>
         </div>
 
         <div>
-          <p className="eyebrow text-stone">Envíos y pagos</p>
-          <ul className="mt-4 space-y-2.5 text-sm text-stone">
-            <li>Despachamos de lunes a viernes</li>
-            <li>Transferencia, Mercado Pago o efectivo</li>
-            <li>Cambio sin cargo si la estampa salió torcida</li>
-          </ul>
+          <p className="eyebrow text-stone">Consultas</p>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-stone">
+            Escribinos para consultar disponibilidad, envíos y medios de pago.
+          </p>
         </div>
       </div>
 
       <div className="border-t border-line/70">
         <p className="mx-auto max-w-7xl px-5 py-5 text-xs text-stone sm:px-8">
-          © {new Date().getFullYear()} {STORE.name}. Sitio demo — los precios son de
-          ejemplo; el WhatsApp sí es el número real de la tienda.
+          © {new Date().getFullYear()} {STORE.name}. Todos los derechos reservados.
         </p>
       </div>
     </footer>

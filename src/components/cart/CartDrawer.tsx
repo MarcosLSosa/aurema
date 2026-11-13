@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react"
 
 import { Icon } from "@/components/ui/Icon"
-import { STORE } from "@/config"
 import { useKeyboardAnchoring } from "@/hooks/useKeyboardAnchoring"
 import { formatPrice } from "@/lib/format"
 import { computeTotals } from "@/lib/whatsapp"
@@ -27,7 +26,6 @@ export function CartDrawer() {
   useKeyboardAnchoring(panelRef, isOpen)
 
   const totals = computeTotals(lines)
-  const remaining = STORE.freeShippingFrom - totals.subtotal
 
   // Retomar el pedido que se perdió en el viaje: el enlace de WhatsApp navega y
   // al volver con "atrás" la app recarga con el drawer cerrado. Si queda un
@@ -128,31 +126,22 @@ export function CartDrawer() {
             </ul>
 
             <footer className="shrink-0 border-t border-line bg-shell/60 px-6 py-5">
-              {remaining > 0 ? (
-                <p className="mb-4 flex items-center gap-2 text-xs text-stone">
-                  <Icon name="truck" className="size-4 shrink-0 text-olive" />
-                  Te faltan {formatPrice(remaining)} para el envío sin cargo.
-                </p>
-              ) : (
-                <p className="mb-4 flex items-center gap-2 text-xs text-olive">
-                  <Icon name="check" className="size-4 shrink-0" strokeWidth={2} />
-                  ¡Listo! El envío sale sin cargo.
-                </p>
-              )}
+              <p className="mb-4 flex items-center gap-2 text-xs text-stone">
+                <Icon name="truck" className="size-4 shrink-0 text-olive" />
+                Coordinamos el envío con vos por WhatsApp.
+              </p>
 
               <dl className="space-y-1.5 text-sm">
                 <div className="flex justify-between text-stone">
-                  <dt>Subtotal</dt>
+                  <dt>Subtotal de productos</dt>
                   <dd className="tabular-nums">{formatPrice(totals.subtotal)}</dd>
                 </div>
                 <div className="flex justify-between text-stone">
                   <dt>Envío</dt>
-                  <dd className="tabular-nums">
-                    {totals.shipping === 0 ? "Sin cargo" : formatPrice(totals.shipping)}
-                  </dd>
+                  <dd>A coordinar</dd>
                 </div>
                 <div className="flex items-baseline justify-between border-t border-line pt-3">
-                  <dt className="text-sm text-bark">Total</dt>
+                  <dt className="text-sm text-bark">Total de productos</dt>
                   <dd className="font-display text-2xl text-bark tabular-nums">
                     {formatPrice(totals.total)}
                   </dd>

@@ -1,12 +1,11 @@
 import { Icon } from "@/components/ui/Icon"
 import { STORE } from "@/config"
-import { formatPrice } from "@/lib/format"
 import { selectItemCount, useCart } from "@/store/cartStore"
 
 const NAV = [
   { label: "Colección", href: "#coleccion" },
-  { label: "Materiales", href: "#materiales" },
-  { label: "Taller", href: "#taller" },
+  { label: "El mundo Aurema", href: "#materiales" },
+  { label: "Contacto", href: "#taller" },
 ]
 
 export function Header() {
@@ -19,24 +18,29 @@ export function Header() {
       <div className="bg-bark text-bone">
         <p className="mx-auto flex max-w-7xl items-center justify-center gap-x-6 gap-y-1 px-5 py-2.5 text-center text-[11px] tracking-[0.14em] uppercase">
           <span className="inline-flex items-center gap-2">
-            <Icon name="truck" className="size-3.5 shrink-0 opacity-70" />
-            Envío sin cargo desde {formatPrice(STORE.freeShippingFrom)}
+            <Icon name="leaf" className="size-3.5 shrink-0 opacity-70" />
+            Accesorios para celebrar tu vida
           </span>
           <span className="hidden items-center gap-2 sm:inline-flex">
-            <Icon name="leaf" className="size-3.5 shrink-0 opacity-70" />
-            Hecho a mano en Argentina
+            <Icon name="instagram" className="size-3.5 shrink-0 opacity-70" />
+            @{STORE.instagram}
           </span>
         </p>
       </div>
 
       <div className="border-b border-line/70 bg-bone/85 backdrop-blur-md">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
-          <a href="#" className="group flex items-baseline gap-2.5">
+          <a href="#" className="group flex items-center gap-2.5">
+            <img
+              src="/images/instagram/logo.jpg"
+              alt=""
+              className="size-9 rounded-full border border-ochre/70 object-cover"
+            />
             <span className="font-display text-[1.55rem] leading-none tracking-[-0.02em] text-bark">
               {STORE.name}
             </span>
             <span className="eyebrow hidden text-stone transition-colors group-hover:text-clay sm:inline">
-              · Totes
+              · Diseños con luz propia
             </span>
           </a>
 
